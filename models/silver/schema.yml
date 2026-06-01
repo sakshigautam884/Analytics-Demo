@@ -1,0 +1,60 @@
+version: 2
+
+models:
+  - name: dim_customers
+    description: >
+      Customer dimension table with lifetime order statistics and segments.
+    columns:
+      - name: customer_id
+        description: "Unique customer identifier."
+        tests:
+          - unique
+          - not_null
+      - name: customer_name
+        description: "Customer full name."
+      - name: country
+        description: "Customer country."
+      - name: total_orders
+        description: "Lifetime order count."
+      - name: first_order_date
+        description: "First order date."
+      - name: last_order_date
+        description: "Most recent order date."
+      - name: lifetime_value
+        description: "Sum of all final_amount values."
+      - name: avg_order_value
+        description: "Average final_amount."
+      - name: customer_segment
+        description: "Bronze / Silver / Gold / Platinum segment."
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['Bronze', 'Silver', 'Gold', 'Platinum']
+
+  - name: fct_orders
+    description: >
+      Clean enriched orders fact table.
+    columns:
+      - name: order_id
+        description: "Unique order identifier."
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: "Customer identifier."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customers')
+                field: customer_id
+      - name: status
+        description: "Order status."
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded']
+      - name: final_amount
+        description: "Net order amount."
+        tests:
+          - not_null

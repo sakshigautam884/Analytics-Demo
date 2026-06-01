@@ -1,0 +1,35 @@
+version: 2
+
+models:
+  - name: rpt_sales_summary
+    description: >
+      Monthly sales summary aggregated by country, segment, and payment method.
+    columns:
+      - name: order_month
+        description: "First day of the month."
+        tests:
+          - not_null
+      - name: net_revenue
+        description: "Sum of final_amount."
+      - name: delivery_rate_pct
+        description: "% of orders delivered."
+      - name: cancellation_rate_pct
+        description: "% of orders cancelled."
+
+  - name: rpt_customer_360
+    description: >
+      Customer 360 with RFM scores and churn risk.
+    columns:
+      - name: customer_id
+        description: "Unique customer identifier."
+        tests:
+          - unique
+          - not_null
+      - name: rfm_avg_score
+        description: "Average RFM score."
+      - name: churn_risk
+        description: "Low / Medium / High churn risk."
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['Low', 'Medium', 'High']

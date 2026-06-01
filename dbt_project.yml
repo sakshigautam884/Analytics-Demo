@@ -1,7 +1,7 @@
 # Name your project! Project names should contain only lowercase characters
 # and underscores. A good package name should reflect your organization's
 # name or the intended use of these models
-name: "Analytics-Demo"
+name: "Analytics_POC"
 version: "1.0.0"
 config-version: 2
 
@@ -21,8 +21,16 @@ clean-targets: # directories to be removed by `dbt clean`
 # using the `{{ config(...) }}` macro.
 
 models:
-  Analytics-Demo:
-    staging:
-      +materialized: view
-    marts:
+  Analytics_POC:        # ← exactly project name jaisa
+    bronze:
+      +materialized: incremental
+      +schema: bronze
+      +tags: ["bronze", "raw"]
+    silver:
       +materialized: table
+      +schema: silver
+      +tags: ["silver", "transformed"]
+    gold:
+      +materialized: table
+      +schema: gold
+      +tags: ["gold", "reporting"]
