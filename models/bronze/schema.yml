@@ -1,0 +1,44 @@
+version: 2
+
+models:
+  - name: raw_order
+    description: >
+      Bronze layer: deduplicated and typed copy of RAW_ORDERS.
+    columns:
+      - name: order_id
+        description: "Unique order identifier."
+        tests:
+          - unique:
+              config:
+                severity: warn
+          - not_null
+      - name: customer_id
+        description: "Customer identifier."
+        tests:
+          - not_null:
+              config:
+                severity: warn
+      - name: customer_name
+        description: "Customer full name."
+      - name: country
+        description: "Customer country."
+      - name: order_amount
+        description: "Gross order amount."
+      - name: discount_amount
+        description: "Discount applied."
+      - name: final_amount
+        description: "Net amount after discount."
+      - name: payment_method
+        description: "Payment method string."
+      - name: status
+        description: "Order lifecycle status."
+      - name: created_at
+        description: "Order creation date."
+        tests:
+          - not_null
+      - name: updated_at
+        description: "Last update date."
+      - name: _loaded_at
+        description: "Timestamp when loaded by dbt."
+      - name: _dbt_run_id
+        description: "dbt invocation UUID."
