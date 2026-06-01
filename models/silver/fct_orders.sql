@@ -5,13 +5,6 @@
   )
 }}
 
-/*
-  Silver / fct_orders
-  ───────────────────
-  Clean, enriched orders fact table.
-  Joins bronze orders with the customer dimension and applies business rules.
-*/
-
 WITH orders AS (
     SELECT * FROM {{ ref('raw_order') }}
 ),
@@ -19,8 +12,7 @@ WITH orders AS (
 customers AS (
     SELECT
         customer_id,
-        customer_segment,
-        country         AS customer_country
+        customer_segment
     FROM {{ ref('dim_customers') }}
 ),
 
@@ -43,15 +35,23 @@ enriched AS (
             END, 2
         )                                       AS discount_pct,
 
-        -- Payment & status
+        -- Payment
         o.payment_method,
-        o.status,
+
+        -- Status (map to standard values)
+        CASE UPPER(o.status)
+            WHEN 'ACTIVE'   THEN 'active'
+            WHEN 'INACTIVE' THEN 'inactive'
+            WHEN 'PENDING'  THEN 'pending'
+            WHEN 'UNKNOWN'  THEN 'unknown'
+            ELSE LOWER(o.status)
+        END                                     AS status,
 
         -- Status flags
-        (o.status = 'delivered')                AS is_delivered,
-        (o.status = 'cancelled')                AS is_cancelled,
-        (o.status = 'refunded')                 AS is_refunded,
-        (o.status IN ('pending','processing'))  AS is_open,
+        (UPPER(o.status) = 'ACTIVE')            AS is_delivered,
+        (UPPER(o.status) = 'INACTIVE')          AS is_cancelled,
+        (UPPER(o.status) = 'UNKNOWN')           AS is_refunded,
+        (UPPER(o.status) = 'PENDING')           AS is_open,
 
         -- Dates
         o.created_at                            AS order_date,

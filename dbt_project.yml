@@ -34,3 +34,5 @@ models:
       +materialized: table
       +schema: gold
       +tags: ["gold", "reporting"]
+vars:
+  start_date: '1900-01-01'

@@ -9,10 +9,14 @@
   )
 }}
 
-/*
-  Snapshot tracks every status change on an order over time.
-  Enables SCD Type-2 history for order lifecycle analytics.
-*/
+WITH deduped AS (
+    SELECT *,
+        ROW_NUMBER() OVER (
+            PARTITION BY order_id
+            ORDER BY updated_at DESC
+        ) AS rn
+    FROM {{ ref('raw_order') }}
+)
 
 SELECT
     order_id,
@@ -22,6 +26,7 @@ SELECT
     payment_method,
     created_at,
     updated_at
-FROM {{ ref('raw_order') }}
+FROM deduped
+WHERE rn = 1
 
 {% endsnapshot %}

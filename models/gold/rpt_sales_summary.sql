@@ -1,36 +1,50 @@
-version: 2
+{{
+  config(
+    materialized = 'table',
+    tags         = ['gold', 'reporting', 'sales']
+  )
+}}
 
-models:
-  - name: rpt_sales_summary
-    description: >
-      Monthly sales summary aggregated by country, customer segment, and payment method.
-      Primary BI reporting table for the sales dashboard.
-    columns:
-      - name: order_month
-        description: "First day of the month (DATE_TRUNC)."
-        tests:
-          - not_null
-      - name: net_revenue
-        description: "Sum of final_amount for the period/slice."
-      - name: delivery_rate_pct
-        description: "% of orders that reached delivered status."
-      - name: cancellation_rate_pct
-        description: "% of orders that were cancelled."
+SELECT
+    order_month,
+    country,
+    customer_segment,
+    payment_method,
 
-  - name: rpt_customer_360
-    description: >
-      Customer 360 view with lifetime value, RFM scores, churn risk,
-      and preferred payment method. One row per customer.
-    columns:
-      - name: customer_id
-        description: "Unique customer identifier."
-        tests:
-          - unique
-          - not_null
-      - name: rfm_avg_score
-        description: "Average of Recency, Frequency, Monetary NTILE(5) scores."
-      - name: churn_risk
-        description: "Low / Medium / High based on days since last order."
-        tests:
-          - accepted_values:
-              values: ['Low', 'Medium', 'High']
+    COUNT(order_id)                     AS total_orders,
+    COUNT(DISTINCT customer_id)         AS unique_customers,
+
+    SUM(order_amount)                   AS gross_revenue,
+    SUM(discount_amount)                AS total_discounts,
+    SUM(final_amount)                   AS net_revenue,
+    ROUND(AVG(final_amount), 2)         AS avg_order_value,
+    ROUND(AVG(discount_pct), 2)         AS avg_discount_pct,
+
+    SUM(CASE WHEN is_delivered  THEN 1 ELSE 0 END) AS delivered_orders,
+    SUM(CASE WHEN is_cancelled  THEN 1 ELSE 0 END) AS cancelled_orders,
+    SUM(CASE WHEN is_refunded   THEN 1 ELSE 0 END) AS refunded_orders,
+    SUM(CASE WHEN is_open       THEN 1 ELSE 0 END) AS open_orders,
+
+    ROUND(
+        SUM(CASE WHEN is_delivered THEN 1 ELSE 0 END)::FLOAT
+        / NULLIF(COUNT(order_id), 0) * 100, 2
+    )                                   AS delivery_rate_pct,
+
+    ROUND(
+        SUM(CASE WHEN is_cancelled THEN 1 ELSE 0 END)::FLOAT
+        / NULLIF(COUNT(order_id), 0) * 100, 2
+    )                                   AS cancellation_rate_pct,
+
+    CURRENT_TIMESTAMP()                 AS _loaded_at
+
+FROM {{ ref('fct_orders') }}
+
+GROUP BY
+    order_month,
+    country,
+    customer_segment,
+    payment_method
+
+ORDER BY
+    order_month DESC,
+    net_revenue  DESC
